@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml
+    kompose.version: 1.20.0 (f3d54d784)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: data-script
+  name: data-script
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.network/myapp: "true"
+      io.kompose.service: data-script
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml
+        kompose.version: 1.20.0 (f3d54d784)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/myapp: "true"
+        io.kompose.service: data-script
+    spec:
+      containers:
+      - image: anat777/quotes-data-script:v1
+        name: data-script
+        resources: {}
+        env:
+        - name: MYSQL_DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: data-secret
+              key: MYSQL_DB_HOST
+        - name: MYSQL_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: data-secret
+              key: MYSQL_USER_PASSWORD
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: data-secret
+              key: MYSQL_USER
+      initContainers:
+      - name: init-container 
+        image: anat777/quotes-data-script:v1
+        command: ['sh', '-c', "until mysql -h ${MYSQL_DB_HOST} -u ${MYSQL_USER} -p${MYSQL_USER_PASSWORD} -e 'show databases;'; do echo waiting for mydb; sleep 2; done"]
+        env:
+        - name: MYSQL_DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: data-secret
+              key: MYSQL_DB_HOST
+        - name: MYSQL_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: data-secret
+              key: MYSQL_USER_PASSWORD
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: data-secret
+              key: MYSQL_USER
+      restartPolicy: Always
+status: {}
